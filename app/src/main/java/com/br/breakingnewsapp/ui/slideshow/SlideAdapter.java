@@ -1,4 +1,4 @@
-package com.br.breakingnewsapp.ui.home;
+package com.br.breakingnewsapp.ui.slideshow;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -6,45 +6,42 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.br.breakingnewsapp.R;
 import com.br.breakingnewsapp.model.Noticia;
+import com.br.breakingnewsapp.ui.home.HomeAdapter;
 import com.squareup.picasso.Picasso;
-import com.squareup.picasso.RequestCreator;
 
-import java.util.ArrayList;
 import java.util.List;
 
-
-public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.MyViewHolder> {
+public class SlideAdapter extends RecyclerView.Adapter<SlideAdapter.MyViewHolder> {
     private List<Noticia> list;
     private Context context;
-    private OnItemClickListener clickListener;
+    private SlideAdapter.OnItemClickListener clickListener;
     interface OnItemClickListener{
         void onItemClick(View view, int position);
     }
-    public HomeAdapter(List<Noticia> list,Context context){
+    public SlideAdapter(List<Noticia> list,Context context){
         this.list = list;
         this.context = context;
 
     }
     @NonNull
     @Override
-    public MyViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public SlideAdapter.MyViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(
-                        R.layout.item_home_recyclerview,
+                        R.layout.item_slide,
                         parent,false
                 );
-        return new MyViewHolder(view);
+        return new SlideAdapter.MyViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull SlideAdapter.MyViewHolder holder, int position) {
         Noticia current = list.get(position);
 
         holder.title.setText(current.getTitle());
@@ -60,12 +57,13 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.MyViewHolder> 
         });*/
     }
 
-    public void setClickListener(OnItemClickListener clickListener) {
+    public void setClickListener(SlideAdapter.OnItemClickListener clickListener) {
         this.clickListener = clickListener;
     }
 
     @Override
     public int getItemCount() {
+        //return 0;
         return list.size();
     }
     class MyViewHolder extends RecyclerView.ViewHolder{
@@ -73,8 +71,8 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.MyViewHolder> 
         ImageView imageView;
         public MyViewHolder(View itemView){
             super(itemView);
-            title= (TextView) itemView.findViewById(R.id.textViewTitle);
-            imageView = itemView.findViewById(R.id.imageViewNews);
+            title= (TextView) itemView.findViewById(R.id.textViewTitleSlide);
+            imageView = itemView.findViewById(R.id.imageViewNewsSlide);
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {

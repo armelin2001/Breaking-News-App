@@ -1,116 +1,72 @@
 package com.br.breakingnewsapp.model;
 
-import android.util.Xml;
+import android.content.Context;
+import android.util.Log;
 
-import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserException;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+import java.io.ByteArrayInputStream;
 import java.util.List;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
 public class FeedRss {
-    private static final String ns = null;
-    public ArrayList<Noticia> parse(InputStream inputStream) throws IOException, XmlPullParserException {
-        try {
-            XmlPullParser parser  = Xml.newPullParser();
-            parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES,false);
-            parser.setInput(inputStream, null);
-            parser.nextTag();
-            return readFeed(parser);
-        }finally {
-            inputStream.close();
-        }
-    }
-    private Noticia readItem(XmlPullParser parser) throws IOException, XmlPullParserException {
-        parser.require(XmlPullParser.START_TAG,ns,"item");
-        String title = null;
-        String link = null;
-        String description = null;
-        String img = null;
-        while (parser.next()!=XmlPullParser.END_TAG){
-            if(parser.getEventType() != XmlPullParser.START_TAG){
-                continue;
+
+    public List<Noticia> loadData(String url, Context context, List<Noticia> list){
+
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        try {
+                            String reg = response.replaceAll("<img [\\s\\S]*? /><br />","");
+                            //String lastReg = reg.replaceAll("<description>Últimas notícias [\\s\\S]*? país.</description>","");
+                            DocumentBuilder newDocumentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+                            Document parse = newDocumentBuilder.parse(new ByteArrayInputStream(reg.getBytes()));
+                            NodeList listaNode = parse.getElementsByTagName("title");
+                            for(int j=0;j<listaNode.getLength();j++) {
+                                String titleErro = listaNode.item(j).getTextContent();
+                                Node nNode = listaNode.item(j);
+                                if (nNode.getNodeType() == Node.ELEMENT_NODE) {
+                                    Element eElement = (Element) nNode;
+                                    if (titleErro.equals(("G1 > Brasil")) || titleErro.equals("G1 > Tecnologia e Games") || titleErro.equals("G1 > Economia")) {
+                                        nNode.getParentNode().removeChild(nNode);
+                                    }
+                                }
+                            }
+
+                            for(int i=0;i<parse.getElementsByTagName("item").getLength();i++){
+                                String title = parse.getElementsByTagName("title").item(i).getTextContent();
+                                String description = parse.getElementsByTagName("description").item(i).getTextContent();
+                                String img = parse.getElementsByTagName("media:content").item(i).getAttributes().item(0).getTextContent();
+                                list.add(new Noticia(title, img,description));
+                            }
+
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e("erroResponse",error.getMessage());
             }
-            String name = parser.getName();
-            if(name.equals("title")){
-                title = readTitle(parser);
-            }else if(name.equals("link")){
-                link = readLink(parser);
-            }else if(name.equals("description")){
-                description = readDescription(parser);
-            }else if(name.equals("media")){
-                img = readImg(parser);
-            }else {
-                skip(parser);
-            }
-        }
-        return new Noticia(title,link,description);
-    }
-    private ArrayList readFeed(XmlPullParser parser) throws XmlPullParserException, IOException {
-        ArrayList itens = new ArrayList();
-        parser.require(XmlPullParser.START_TAG, ns, "feed");
-        while (parser.next() != XmlPullParser.END_TAG){
-            if (parser.getEventType() != XmlPullParser.START_TAG) {
-                continue;
-            }
-            String name = parser.getName();
-            if(name.equals("item")){
-                itens.add(readItem(parser));
-            }
-            else {
-                skip(parser);
-            }
-        }
-        return itens;
-    }
-    private String readText(XmlPullParser parser) throws IOException, XmlPullParserException {
-        String result ="";
-        if(parser.next() == XmlPullParser.TEXT){
-            result = parser.getText();
-            parser.nextTag();
-        }
-        return result;
-    }
-    private String readDescription(XmlPullParser parser) throws IOException, XmlPullParserException {
-        parser.require(XmlPullParser.START_TAG, ns,"description");
-        String description = readText(parser);
-        parser.require(XmlPullParser.END_TAG,ns,"description");
-        return description;
-    }
-    private String readTitle(XmlPullParser parser) throws IOException, XmlPullParserException {
-        parser.require(XmlPullParser.START_TAG, ns,"title");
-        String title = readText(parser);
-        parser.require(XmlPullParser.END_TAG,ns,"title");
-        return title;
-    }
-    private String readLink(XmlPullParser parser) throws IOException, XmlPullParserException {
-        parser.require(XmlPullParser.START_TAG, ns,"link");
-        String link = readText(parser);
-        parser.require(XmlPullParser.END_TAG,ns,"link");
-        return link;
-    }
-    private String readImg(XmlPullParser parser) throws IOException, XmlPullParserException {
-        String img = "";
-        parser.require(XmlPullParser.START_TAG,ns,"media");
-        img = parser.getAttributeValue(null,"url");
-        return img;
-    }
-    private void skip(XmlPullParser parser) throws XmlPullParserException, IOException {
-        if (parser.getEventType() != XmlPullParser.START_TAG) {
-            throw new IllegalStateException();
-        }
-        int depth =1;
-        while (depth != 0){
-            switch (parser.next()){
-                case XmlPullParser.END_TAG:
-                    depth--;
-                    break;
-                case XmlPullParser.START_TAG:
-                    depth++;
-                    break;
-            }
-        }
+        });
+        RequestQueue requestQueue = Volley.newRequestQueue(context);
+        requestQueue.add(stringRequest);
+        return list;
     }
 }
